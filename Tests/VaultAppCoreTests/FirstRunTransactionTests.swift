@@ -13,8 +13,12 @@ private enum SyntheticError: Error { case failed }
 private actor TransactionSetupStore: SetupStatusStoring {
     private let recorder: EventRecorder
     private(set) var completed = false
+    private(set) var pending = false
     init(recorder: EventRecorder) { self.recorder = recorder }
     func isSetupComplete() async throws -> Bool { completed }
+    func hasPendingSetup() async -> Bool { pending }
+    func beginSetup() async throws { pending = true }
+    func clearPendingSetup() async { pending = false }
     func markSetupComplete(_ metadata: SetupMetadata) async throws {
         await recorder.record("setup")
         completed = true
@@ -26,6 +30,7 @@ private actor TransactionRecoveryStore: RecoveryEnvelopeStoring {
     private(set) var removed = false
     var envelope = Data([8])
     init(recorder: EventRecorder) { self.recorder = recorder }
+    func hasRecoveryEnvelope() async -> Bool { false }
     func save(_ envelope: Data) async throws {
         await recorder.record("recovery")
         self.envelope = envelope
@@ -42,6 +47,7 @@ private actor TransactionVaultStore: EncryptedVaultStoring {
         self.recorder = recorder
         self.count = count
     }
+    func hasVault() async -> Bool { false }
     func createEmptyVault(using key: Data) async throws {
         await recorder.record("vault")
     }
