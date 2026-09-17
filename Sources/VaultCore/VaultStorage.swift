@@ -85,6 +85,14 @@ public struct VaultFileStore<Cipher: VaultCipher>: Sendable {
         }
 
         if FileManager.default.fileExists(atPath: url.path) {
+#if os(macOS)
+            _ = try FileManager.default.replaceItemAt(
+                url,
+                withItemAt: temporaryURL,
+                backupItemName: backupURL.lastPathComponent,
+                options: []
+            )
+#else
             try FileManager.default.moveItem(at: url, to: backupURL)
             do {
                 try FileManager.default.moveItem(at: temporaryURL, to: url)
@@ -92,6 +100,7 @@ public struct VaultFileStore<Cipher: VaultCipher>: Sendable {
                 try? FileManager.default.moveItem(at: backupURL, to: url)
                 throw error
             }
+#endif
         } else {
             try FileManager.default.moveItem(at: temporaryURL, to: url)
         }
