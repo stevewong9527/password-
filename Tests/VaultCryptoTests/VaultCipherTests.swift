@@ -89,7 +89,7 @@ private func fixtureDocument() -> VaultDocument {
     let encrypted = try VaultCipher.seal(fixtureDocument(), using: key)
     var envelope = try JSONDecoder().decode(EncryptedVaultEnvelope.self, from: encrypted)
     var ciphertext = envelope.ciphertext
-    #require(!ciphertext.isEmpty)
+    try #require(!ciphertext.isEmpty)
     ciphertext[0] ^= 0x01
     envelope = EncryptedVaultEnvelope(
         formatVersion: envelope.formatVersion,

@@ -67,7 +67,7 @@ private func storeFixtureDocument() -> VaultDocument {
 
     var envelope = try JSONDecoder().decode(EncryptedVaultEnvelope.self, from: Data(contentsOf: url))
     var tag = envelope.tag
-    #require(!tag.isEmpty)
+    try #require(!tag.isEmpty)
     tag[tag.startIndex] ^= 0x01
     envelope = EncryptedVaultEnvelope(
         formatVersion: envelope.formatVersion,
