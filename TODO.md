@@ -71,6 +71,7 @@ Active branch: `feature/mvp-core`
 - [x] Existing vault/recovery artifacts without a pending marker are never silently overwritten or deleted.
 - [x] Package tests run with warnings-as-errors.
 - [x] GitHub macOS 15 CI builds the real `VaultMac` app with signing disabled.
+- [x] Task 4 repo-level review completed: secret leakage, setup ordering, sandbox entitlements and duplicate-crypto boundaries checked.
 - [x] Add real-Mac checklist at `docs/MANUAL_TEST_4A.md`.
 - [ ] Execute and record the real-Mac first-run, Touch ID/system-password, recovery and corruption checklist.
 
