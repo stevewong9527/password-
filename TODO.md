@@ -2,7 +2,7 @@
 
 Date: 2026-09-17
 Source of truth: `SPEC.md`
-Active branch: `feature/mvp-core`
+Active branch: `feature/m2-encrypted-vault`
 
 ## Working rules
 
@@ -19,7 +19,7 @@ Active branch: `feature/mvp-core`
 - [x] Add `README.md` with product scope, build/test commands and security warning.
 - [x] Add hardened `.gitignore` for Xcode state, password CSV exports, vault/recovery files and secrets.
 - [x] Add root Swift Package for portable `VaultCore` development/testing.
-- [ ] Add GitHub Actions CI after the first core branch is merged.
+- [x] Add GitHub Actions CI on a macOS runner with Swift warnings treated as errors.
 
 Acceptance:
 
@@ -87,36 +87,49 @@ Apple's current documented password CSV fields are:
 
 ### Milestone 1 review status
 
-- [x] Full portable-core test suite passes locally.
+- [x] Full portable-core test suite passes.
 - [x] Tests compile with Swift warnings treated as errors.
 - [x] Review covered conservative matching, plaintext error leakage and CSV edge cases.
 - [x] Review fixes applied: CRLF parsing, BOM handling, extra/missing-field validation, unnecessary force unwrap removed.
-- [ ] Add CI and run the same suite on macOS before merging the first production app target.
+- [x] GitHub Actions runs the suite on macOS.
 
 ---
 
-## Milestone 2 — Encrypted vault storage — NEXT
+## Milestone 2 — Encrypted vault storage — COMPLETE
 
-- [ ] Define versioned `VaultDocument` envelope.
-- [ ] RED: persisted vault must not contain a known plaintext test value.
-- [ ] RED: modified ciphertext/tag must fail to open.
-- [ ] RED: repeated saves of unchanged plaintext produce different ciphertext/nonces.
-- [ ] Implement random 256-bit vault key.
-- [ ] Implement AES-256-GCM using CryptoKit.
-- [ ] Implement atomic encrypted file replacement.
-- [ ] Keep a recoverable previous encrypted copy during replacement.
-- [ ] Test empty, normal, large synthetic and corrupted vaults.
-- [ ] Document on-disk envelope/version migration rules.
+- [x] Define separately versioned `VaultDocument` and `EncryptedVaultEnvelope`.
+- [x] RED: persisted vault must not contain known plaintext test values.
+- [x] RED: modified ciphertext/tag must fail to open.
+- [x] RED: repeated seals of unchanged plaintext produce different ciphertext/nonces.
+- [x] Implement random 256-bit vault key using CryptoKit.
+- [x] Implement AES-256-GCM using CryptoKit.
+- [x] Implement atomic/staged encrypted file replacement.
+- [x] Keep a recoverable previous encrypted copy during replacement.
+- [x] Test empty, normal, 2,000-record synthetic and corrupted vaults.
+- [x] Reject wrong keys and tampered ciphertext fail-closed.
+- [x] Reject unsupported envelope versions/algorithms.
+- [x] Review fix: reject unsupported decrypted `VaultDocument` schema versions instead of guessing a migration.
+- [x] Document on-disk envelope/version rules in `docs/VAULT_FORMAT.md`.
 
 Acceptance:
 
-- No plaintext credential metadata is visible in the persisted vault.
-- Authentication/tag failure is fail-closed.
-- No custom cryptographic primitive is implemented.
+- [x] No known plaintext credential metadata is visible in the persisted vault/envelope tests.
+- [x] Authentication/tag failure is fail-closed.
+- [x] Previous-version backup remains encrypted.
+- [x] No custom cryptographic primitive is implemented.
+- [x] Fresh macOS GitHub Actions run passes `swift test -Xswiftc -warnings-as-errors` with 34 tests.
+
+### Milestone 2 review status
+
+- [x] Initial RED was verified by CI after registering the new test target.
+- [x] Review checked plaintext leakage, nonce reuse, tamper handling, wrong-key handling and file replacement behavior.
+- [x] Review discovered missing document-schema version validation.
+- [x] Added a failing regression test for unsupported `VaultDocument.version`.
+- [x] Applied the minimum fix and verified the full 34-test suite again.
 
 ---
 
-## Milestone 3 — Key management and unlock
+## Milestone 3 — Key management and unlock — NEXT
 
 - [ ] Define `VaultKeyProvider` interface.
 - [ ] Implement Keychain-backed device protection.
@@ -169,7 +182,9 @@ Acceptance:
 
 ---
 
-## Completed first execution batch
+## Completed execution batches
+
+### Batch 1
 
 - [x] M0 repository bootstrap.
 - [x] M1.1 credential model.
@@ -178,11 +193,18 @@ Acceptance:
 - [x] M1.4 Google-compatible import.
 - [x] M1.5 Apple documented header compatibility for password fields.
 - [x] M1.6 duplicate/conflict classification.
-- [x] Run tests.
-- [x] Review code against `SPEC.md`.
-- [x] Apply review fixes.
-- [x] Re-run tests with warnings as errors.
+- [x] Review and regression fixes.
+
+### Batch 2
+
+- [x] Add macOS CI.
+- [x] RED encrypted-vault security tests.
+- [x] Add `VaultCrypto` module.
+- [x] Add AES-256-GCM encrypted envelope and random 256-bit key.
+- [x] Add encrypted file persistence and previous encrypted copy.
+- [x] Review and add schema-version regression guard.
+- [x] Full CI verification: 34 tests pass with warnings as errors.
 
 ## Next execution batch
 
-Start Milestone 2 with tests first: versioned vault envelope, AES-GCM ciphertext integrity, nonce uniqueness and atomic encrypted persistence.
+Start Milestone 3 with the key-provider contract and locked/unlocked state tests first. Implement Keychain and LocalAuthentication behind a separate platform boundary; do not mix platform APIs into `VaultCore` or encryption primitives into `VaultPlatform`.
