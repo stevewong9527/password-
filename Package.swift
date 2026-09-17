@@ -8,10 +8,8 @@ let package = Package(
         .macOS(.v15)
     ],
     products: [
-        .library(
-            name: "VaultCore",
-            targets: ["VaultCore"]
-        )
+        .library(name: "VaultCore", targets: ["VaultCore"]),
+        .library(name: "VaultAppCore", targets: ["VaultAppCore"])
     ],
     dependencies: [
         .package(
@@ -26,9 +24,17 @@ let package = Package(
                 .product(name: "Sodium", package: "swift-sodium")
             ]
         ),
+        .target(
+            name: "VaultAppCore",
+            dependencies: ["VaultCore"]
+        ),
         .testTarget(
             name: "VaultCoreTests",
             dependencies: ["VaultCore"]
+        ),
+        .testTarget(
+            name: "VaultAppCoreTests",
+            dependencies: ["VaultAppCore"]
         )
     ]
 )

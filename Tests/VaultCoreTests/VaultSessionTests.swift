@@ -75,3 +75,14 @@ private actor StubVaultKeyProvider: VaultKeyProvider {
     }
 }
 #endif
+
+@Test func verifiedRecoveryKeyCanUnlockSessionWithoutProviderReload() async throws {
+    let provider = StubVaultKeyProvider(key: Data(repeating: 1, count: 32))
+    let session = VaultSession(provider: provider)
+    let recovered = Data(repeating: 9, count: 32)
+
+    try await session.unlock(withVaultKey: recovered)
+
+    #expect(try await session.withVaultKey { $0 } == recovered)
+    #expect(await provider.loadCount == 0)
+}

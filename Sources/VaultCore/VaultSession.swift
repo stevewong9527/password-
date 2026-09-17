@@ -29,6 +29,13 @@ public actor VaultSession {
         cachedKey = key
     }
 
+    public func unlock(withVaultKey key: Data) throws {
+        guard key.count == 32 else {
+            throw VaultSessionError.invalidKeyLength(key.count)
+        }
+        cachedKey = key
+    }
+
     public func withVaultKey<Result: Sendable>(
         _ operation: @Sendable (Data) throws -> Result
     ) throws -> Result {
