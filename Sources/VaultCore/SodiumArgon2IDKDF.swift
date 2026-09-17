@@ -4,13 +4,11 @@ import Sodium
 
 public struct SodiumArgon2IDKDF: PasswordKeyDeriver {
     public let algorithmIdentifier = "argon2id13"
-    private let sodium: Sodium
 
-    public init() {
-        self.sodium = Sodium()
-    }
+    public init() {}
 
     public func generateSalt(length: Int) throws -> Data {
+        let sodium = Sodium()
         guard length == sodium.pwHash.SaltBytes,
               let bytes = sodium.randomBytes.buf(length: length) else {
             throw RecoveryError.invalidSaltLength(length)
@@ -25,6 +23,7 @@ public struct SodiumArgon2IDKDF: PasswordKeyDeriver {
         opsLimit: UInt64,
         memLimit: UInt64
     ) throws -> Data {
+        let sodium = Sodium()
         guard salt.count == sodium.pwHash.SaltBytes else {
             throw RecoveryError.invalidSaltLength(salt.count)
         }
