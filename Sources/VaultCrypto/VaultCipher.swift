@@ -51,10 +51,16 @@ public enum VaultCipher {
             throw VaultCryptoError.authenticationFailed
         }
 
+        let document: VaultDocument
         do {
-            return try JSONDecoder().decode(VaultDocument.self, from: plaintext)
+            document = try JSONDecoder().decode(VaultDocument.self, from: plaintext)
         } catch {
             throw VaultCryptoError.invalidVaultPayload
         }
+
+        guard document.version == VaultDocument.currentVersion else {
+            throw VaultCryptoError.unsupportedDocumentVersion(document.version)
+        }
+        return document
     }
 }

@@ -7,4 +7,5 @@ public enum VaultCryptoError: Error, Equatable, Sendable {
     case unsupportedAlgorithm(String)
     case authenticationFailed
     case invalidVaultPayload
+    case unsupportedDocumentVersion(Int)
 }
