@@ -11,11 +11,19 @@ let package = Package(
         .library(
             name: "VaultCore",
             targets: ["VaultCore"]
+        ),
+        .library(
+            name: "VaultCrypto",
+            targets: ["VaultCrypto"]
         )
     ],
     targets: [
         .target(
             name: "VaultCore"
+        ),
+        .target(
+            name: "VaultCrypto",
+            dependencies: ["VaultCore"]
         ),
         .testTarget(
             name: "VaultCoreTests",
@@ -23,7 +31,7 @@ let package = Package(
         ),
         .testTarget(
             name: "VaultCryptoTests",
-            dependencies: ["VaultCore"]
+            dependencies: ["VaultCore", "VaultCrypto"]
         )
     ]
 )
