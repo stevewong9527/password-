@@ -6,16 +6,23 @@ The product goal and security architecture are defined in [`SPEC.md`](SPEC.md). 
 
 ## Current status
 
-The repository currently contains the first portable `VaultCore` slice:
+The repository now contains the automated Milestone 4A secure app shell:
 
-- credential model
-- conservative host normalization
-- CSV parsing with quoted commas, escaped quotes, CRLF/LF and multiline fields
-- Google-compatible password CSV import
-- Apple Passwords-compatible header handling (`Title,URL,Username,Password,Notes,OTPAuth`; OTPAuth is currently ignored)
-- duplicate/conflict classification
+- native macOS 15+ SwiftUI `VaultMac` app target with App Sandbox
+- Apple/Google-compatible password CSV parsing/import foundation
+- conservative host normalization and duplicate/conflict classification
+- versioned whole-vault encryption using AES-256-GCM through CryptoKit
+- random 256-bit vault key
+- macOS Keychain device unlock protected by user presence
+- master-password recovery using Argon2id13 from pinned `swift-sodium` 0.11.0
+- first-run setup transaction with `setup.json` written last
+- `setup.pending` crash-recovery marker that prevents accidental overwrite of existing vault artifacts
+- explicit lock and in-memory recovery-attempt backoff
+- macOS 15 CI that runs package tests and builds the real `VaultMac.app`
 
-Encryption, Keychain/Touch ID integration, SwiftUI UI and the macOS AutoFill extension are not implemented yet. Do **not** use this repository as a real password manager yet.
+Automated 4A work is complete, but the real-Mac interactive checklist in [`docs/MANUAL_TEST_4A.md`](docs/MANUAL_TEST_4A.md) is still required before Milestone 4A is declared complete. Credential browsing/editing, import UI, password generator UI, AutoFill, backup/restore and release hardening are later milestones.
+
+**Do not use this repository with real credentials yet.** It is still pre-release security software.
 
 ## Security warning
 
@@ -27,27 +34,38 @@ This repository is public. Never commit:
 - signing certificates/provisioning profiles
 - environment files containing secrets
 
-Tests use synthetic credentials only. `*.csv` is ignored by default to reduce accidental password-export commits.
+Tests use synthetic credentials only. `*.csv` and vault/recovery patterns are ignored by default to reduce accidental secret commits.
 
 ## Development
 
-Requirements for the portable core:
+Requirements:
 
 - Swift 6.0+
+- macOS 15+ / Xcode for the native app target
 
-Run tests from the repository root:
+Run package tests from the repository root:
 
 ```bash
-swift test
+swift test -Xswiftc -warnings-as-errors
 ```
 
-The production macOS app will target macOS 15+ and use SwiftUI, AuthenticationServices, CryptoKit, Keychain and LocalAuthentication according to `SPEC.md`.
+Build the native app without signing:
+
+```bash
+xcodebuild \
+  -project VaultMac.xcodeproj \
+  -scheme VaultMac \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
 
 ## Development order
 
-1. `VaultCore` import/normalization/conflict logic
-2. encrypted vault storage
-3. key management and unlock
-4. SwiftUI application
-5. AutoFill Credential Provider Extension
-6. backup/restore and release hardening
+1. `VaultCore` import/normalization/conflict logic — implemented
+2. encrypted vault storage — implemented
+3. key management and unlock — core implemented
+4. SwiftUI application — 4A automated shell implemented; manual real-Mac gate pending
+5. credential management/import/password-generator UI — next application slices
+6. AutoFill Credential Provider Extension
+7. backup/restore and release hardening
