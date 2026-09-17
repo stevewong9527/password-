@@ -24,4 +24,12 @@ jobs:
       - name: Run package tests
         run: swift test -Xswiftc -warnings-as-errors
       - name: Build VaultMac app
-        run: xcodebuild -project VaultMac.xcodeproj -scheme VaultMac -configuration Debug CODE_SIGNING_ALLOWED=NO build
+        run: >-
+          xcodebuild
+          -project VaultMac.xcodeproj
+          -scheme VaultMac
+          -configuration Debug
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO
+          ONLY_ACTIVE_ARCH=YES
+          build
