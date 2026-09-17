@@ -1,0 +1,35 @@
+name: Swift Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Run package tests
+        run: swift test -Xswiftc -warnings-as-errors
+      - name: Build VaultMac app
+        run: >-
+          xcodebuild
+          -project VaultMac.xcodeproj
+          -scheme VaultMac
+          -configuration Debug
+          -destination 'platform=macOS,arch=arm64'
+          CODE_SIGNING_ALLOWED=NO
+          ONLY_ACTIVE_ARCH=YES
+          build

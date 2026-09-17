@@ -2,187 +2,102 @@
 
 Date: 2026-09-17
 Source of truth: `SPEC.md`
+Active branch: `feature/mvp-core`
 
 ## Working rules
 
-- [ ] Use TDD for production behavior: failing test -> minimal implementation -> green -> refactor.
-- [ ] Never add real password exports, vaults, secrets or signing material to Git.
-- [ ] Keep security-sensitive changes small enough to review independently.
-- [ ] Prefer Apple system frameworks and audited libraries over custom cryptography.
-- [ ] Update this file after each completed implementation/review cycle.
+- Use TDD for production behavior: failing test -> minimal implementation -> green -> refactor.
+- Never add real password exports, vaults, secrets or signing material to Git.
+- Keep security-sensitive changes small enough to review independently.
+- Prefer Apple system frameworks and audited libraries over custom cryptography.
+- Batch GitHub writes so one logical change creates one CI cycle.
 
----
+## Milestone 0 — Repository bootstrap — COMPLETE
 
-## Milestone 0 — Repository bootstrap
+- [x] README, hardened `.gitignore`, Swift package, macOS 15 CI.
+- [x] Feature work runs through PR checks; `push` CI runs on `main` only.
 
-- [ ] Add `README.md` with product scope, local build/test commands and security warning.
-- [ ] Add hardened `.gitignore` for Xcode user state, exported-password CSV, vault files, environment/secrets files and recovery artifacts.
-- [ ] Add root Swift Package for portable `VaultCore` development/testing.
-- [ ] Add CI later after first package tests are stable.
+## Milestone 1 — VaultCore import foundation — COMPLETE
 
-Acceptance:
+- [x] Credential model, host normalization, CSV parser.
+- [x] Google-compatible import.
+- [x] Apple documented header compatibility (`Title,URL,Username,Password,Notes,OTPAuth`).
+- [x] Conservative duplicate/conflict classification.
+- [x] Portable + macOS CI coverage.
+- [ ] Store/use `OTPAuth` when TOTP support is implemented.
 
-- `swift test` runs from repository root.
-- Repository contains no real secrets or private fixtures.
+## Milestone 2 — Encrypted vault storage — COMPLETE
 
----
+- [x] Versioned vault envelope/document.
+- [x] AES-256-GCM through CryptoKit with fresh nonce.
+- [x] Plaintext-at-rest and tamper fail-closed regression tests.
+- [x] Atomic replacement + encrypted `.bak` recovery copy.
+- [x] Empty + 5,000-record vault coverage.
+- [x] `docs/VAULT_FORMAT.md`.
 
-## Milestone 1 — VaultCore import foundation
+## Milestone 3 — Key management and unlock — COMPLETE FOR CORE
 
-### 1.1 Credential model
+### 3A Device-local key path
 
-- [ ] Test `CredentialRecord` initialization/equality/Codable round trip.
-- [ ] Implement `CredentialRecord` with UUID, title, service URL, normalized host, username, password, notes and timestamps.
+- [x] `VaultKeyProvider` + `VaultSession`.
+- [x] Lock clears cached key state and rejects non-256-bit key material.
+- [x] macOS Keychain provider with `ThisDeviceOnly` + user presence and `LAContext`.
+- [x] macOS CI coverage.
+- [ ] Real-Mac Touch ID/system-password retrieval check (`docs/MANUAL_TEST_4A.md`).
 
-### 1.2 Host normalization
+### 3B Master-password recovery
 
-- [ ] Test lowercasing host.
-- [ ] Test leading `www.` removal.
-- [ ] Test path/query/fragment removal from match key.
-- [ ] Test malformed/missing-host URL rejection.
-- [ ] Implement conservative `HostNormalizer`.
+- [x] Pin `jedisct1/swift-sodium` `0.11.0`.
+- [x] Argon2id13 recovery envelope around the same random 256-bit vault key.
+- [x] Store salt + KDF parameters, never master password.
+- [x] Wrong password/tamper fail closed.
+- [x] Reject weaker KDF parameters; no silent downgrade.
+- [x] Real libsodium Argon2id + CryptoKit integration passes macOS CI.
+- [x] Recovery backoff policy/state machine: 1s, 2s, 4s... capped at 30s and reset on success.
+- [x] `docs/RECOVERY_FORMAT.md`.
 
-### 1.3 CSV parser
+## Milestone 4 — macOS SwiftUI application — IN PROGRESS
 
-- [ ] Test simple rows.
-- [ ] Test quoted comma.
-- [ ] Test escaped double quote.
-- [ ] Test CRLF/LF.
-- [ ] Test multiline quoted field.
-- [ ] Test malformed unterminated quote returns an error without secret content.
-- [ ] Implement a small RFC-4180-style parser for importer input.
+### 4A Secure app shell — AUTOMATED WORK COMPLETE
 
-### 1.4 Google-compatible importer
+- [x] Create native `VaultMac.xcodeproj` for macOS 15+ and bundle id `com.stevewong.vaultmac`.
+- [x] Enable App Sandbox with no unnecessary network/file entitlements.
+- [x] Wire `VaultAppCore` to Keychain, Argon2id, AES-GCM and encrypted vault storage.
+- [x] First-run Create Vault screen with master-password confirmation.
+- [x] Locked screen with device-authentication unlock and master-password recovery sheet.
+- [x] Unlocked shell with record count and explicit Lock.
+- [x] Setup completion marker is written only after recovery, vault and Keychain steps succeed.
+- [x] Add `setup.pending` transaction marker so interrupted setup can be cleaned safely.
+- [x] Existing vault/recovery artifacts without a pending marker are never silently overwritten or deleted.
+- [x] Package tests run with warnings-as-errors.
+- [x] GitHub macOS 15 CI builds the real `VaultMac` app with signing disabled.
+- [x] Task 4 repo-level review completed: secret leakage, setup ordering, sandbox entitlements and duplicate-crypto boundaries checked.
+- [x] Add real-Mac checklist at `docs/MANUAL_TEST_4A.md`.
+- [ ] Execute and record the real-Mac first-run, Touch ID/system-password, recovery and corruption checklist.
 
-- [ ] Test required header mapping for `url`, `username`, `password`.
-- [ ] Test extra columns are tolerated.
-- [ ] Test case/whitespace normalization for headers.
-- [ ] Test malformed rows produce row-level validation errors.
-- [ ] Implement `PasswordCSVImporter` returning preview rows, not directly mutating a vault.
+### Later Milestone 4 slices
 
-### 1.5 Apple importer mapping
-
-- [ ] Capture synthetic header fixtures representing current Apple Passwords export.
-- [ ] Map Apple title/site/user/password/notes aliases through the same importer pipeline.
-- [ ] Keep mapping explicit and unit tested; do not guess silently when a required field is missing.
-
-### 1.6 Duplicate/conflict classifier
-
-- [ ] Same normalized host + normalized username + same password => duplicate.
-- [ ] Same normalized host + normalized username + different password => conflict.
-- [ ] Different host or username => distinct.
-- [ ] Username comparison is case-insensitive after trimming for duplicate classification.
-- [ ] Implement `ImportConflictClassifier` with `duplicate`, `conflict`, `distinct` outcomes.
-
-Acceptance:
-
-- All synthetic import/core unit tests pass on `swift test`.
-- Review confirms no secret values appear in error descriptions.
-
----
-
-## Milestone 2 — Encrypted vault storage
-
-- [ ] Define versioned `VaultDocument` envelope.
-- [ ] RED: persisted vault must not contain known plaintext test password.
-- [ ] RED: modified ciphertext/tag must fail to open.
-- [ ] RED: repeated saves produce different ciphertext for unchanged plaintext.
-- [ ] Implement random 256-bit vault key.
-- [ ] Implement AES-256-GCM encryption using CryptoKit.
-- [ ] Implement atomic encrypted file replacement with recoverable previous encrypted copy.
-- [ ] Test empty vault, normal vault, large synthetic vault and corrupted vault.
-- [ ] Document on-disk envelope fields and migration/version rules.
-
-Acceptance:
-
-- No plaintext credential metadata is visible in the vault file.
-- Authentication failure is fail-closed.
-
----
-
-## Milestone 3 — Key management and unlock
-
-- [ ] Define `VaultKeyProvider` interface.
-- [ ] Implement Keychain-backed device key storage.
-- [ ] Add LocalAuthentication user-presence/Touch ID gate where supported.
-- [ ] RED: locked provider cannot release the vault key.
-- [ ] RED: explicit lock clears cached decrypted key/state.
-- [ ] Add master-password recovery design implementation using Argon2id from a pinned reviewed library.
-- [ ] Store KDF salt/parameters, never the master password.
-- [ ] Add exponential UI backoff for repeated recovery attempts.
-
-Acceptance:
-
-- Device unlock and recovery paths unwrap the same random vault key.
-- No silent KDF downgrade exists.
-
----
-
-## Milestone 4 — macOS SwiftUI application
-
-- [ ] Create Xcode macOS app target with App Sandbox.
-- [ ] First-run vault creation/unlock flow.
 - [ ] Credential list/search/detail UI.
 - [ ] Add/edit/delete credential flows.
-- [ ] Import picker + preview + conflict-resolution UI.
+- [ ] Import picker + preview + conflict resolution.
 - [ ] Password generator UI.
-- [ ] Clipboard copy with safe delayed clear.
-- [ ] Auto-lock timer and workstation-lock handling.
+- [ ] Clipboard safe delayed clear.
+- [ ] Auto-lock and workstation-lock handling.
 - [ ] Local reused/weak password audit.
-
-Acceptance:
-
-- A user can install, create/unlock a vault, import a synthetic CSV, resolve conflicts and manage credentials without network access.
-
----
 
 ## Milestone 5 — AutoFill Credential Provider
 
-- [ ] Add Credential Provider Extension target.
-- [ ] Add AutoFill Credential Provider entitlement to app and extension.
-- [ ] Configure App Group shared encrypted vault access.
-- [ ] Populate/update `ASCredentialIdentityStore` without passwords.
-- [ ] Return matching credentials for OS service identifiers.
-- [ ] RED/manual test: unrelated domain cannot receive a credential.
-- [ ] Handle locked vault by requesting only the required user interaction.
-- [ ] Add extension-enable onboarding using supported AuthenticationServices settings flow when available.
-
-Acceptance:
-
-- Matching credential appears in macOS AutoFill and fills successfully.
-- Deliberately unrelated sites do not receive the credential.
-
----
+- [ ] Credential Provider Extension + App Group.
+- [ ] `ASCredentialIdentityStore` without passwords.
+- [ ] Domain-safe credential matching and fail-closed behavior.
 
 ## Milestone 6 — Backup, restore and release hardening
 
-- [ ] Encrypted backup export.
-- [ ] Authenticated restore with version validation.
-- [ ] Explicit plaintext interoperability export with strong warnings and re-authentication.
-- [ ] Privacy policy/security model documentation.
-- [ ] App Store sandbox/signing/notarization/export-compliance checklist.
-- [ ] Dependency/SBOM review.
-- [ ] Manual security regression checklist.
-- [ ] Threat-model review before public beta.
+- [ ] Encrypted backup/restore.
+- [ ] Explicit plaintext interoperability export with warning + re-authentication.
+- [ ] Privacy/security docs, App Store/export compliance, dependency/SBOM review.
+- [ ] Manual security regression + threat-model review.
 
-Acceptance:
+## Next execution batch
 
-- Release candidate passes automated tests and manual macOS AutoFill/sandbox checks.
-- No test or build artifact contains real credentials.
-
----
-
-## First execution batch
-
-This is the batch to implement now:
-
-- [ ] M0: `README.md`, `.gitignore`, Swift package skeleton.
-- [ ] M1.1: `CredentialRecord` tests + implementation.
-- [ ] M1.2: `HostNormalizer` tests + implementation.
-- [ ] M1.3: CSV parser tests + implementation.
-- [ ] M1.4: Google-compatible importer tests + implementation.
-- [ ] M1.6: duplicate/conflict tests + implementation.
-- [ ] Run full `swift test`.
-- [ ] Review code against `SPEC.md` for over-broad matching, plaintext logging and parser edge cases.
-- [ ] Fix review findings.
-- [ ] Re-run full test suite and update completed checkboxes.
+Run `docs/MANUAL_TEST_4A.md` on a real Mac. Once the interactive checklist passes, mark 4A complete and start the credential list/search/detail slice without changing the vault format.

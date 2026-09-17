@@ -1,0 +1,69 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 = {isa = PBXBuildFile; fileRef = A20000000000000000000001; };
+		A10000000000000000000002 = {isa = PBXBuildFile; fileRef = A20000000000000000000002; };
+		A10000000000000000000003 = {isa = PBXBuildFile; fileRef = A20000000000000000000003; };
+		A10000000000000000000004 = {isa = PBXBuildFile; fileRef = A20000000000000000000004; };
+		A10000000000000000000005 = {isa = PBXBuildFile; fileRef = A20000000000000000000005; };
+		A10000000000000000000006 = {isa = PBXBuildFile; fileRef = A20000000000000000000006; };
+		A10000000000000000000007 = {isa = PBXBuildFile; fileRef = A20000000000000000000007; };
+		A10000000000000000000008 = {isa = PBXBuildFile; productRef = A90000000000000000000001; };
+		A10000000000000000000009 = {isa = PBXBuildFile; productRef = A90000000000000000000002; };
+/* End PBXBuildFile section */
+/* Begin PBXFileReference section */
+		A20000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultMacApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateVaultView.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedView.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockedView.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultMacDependencies.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VaultMac.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000009 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2000000000000000000000A = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VaultMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000008,A10000000000000000000009,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000002,A40000000000000000000003,); sourceTree = "<group>"; };
+		A40000000000000000000002 = {isa = PBXGroup; children = (A20000000000000000000001,A20000000000000000000002,A20000000000000000000003,A20000000000000000000004,A20000000000000000000005,A20000000000000000000006,A20000000000000000000007,A20000000000000000000008,A20000000000000000000009,); path = VaultMac; sourceTree = "<group>"; };
+		A40000000000000000000003 = {isa = PBXGroup; children = (A2000000000000000000000A,); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 = {isa = PBXNativeTarget; buildConfigurationList = A80000000000000000000002; buildPhases = (A60000000000000000000001,A30000000000000000000001,A60000000000000000000002,); buildRules = (); dependencies = (); name = VaultMac; packageProductDependencies = (A90000000000000000000001,A90000000000000000000002,); productName = VaultMac; productReference = A2000000000000000000000A; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+/* Begin PBXProject section */
+		A70000000000000000000001 = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1610; LastUpgradeCheck = 1610;}; buildConfigurationList = A80000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,Base,); mainGroup = A40000000000000000000001; packageReferences = (A90000000000000000000003,); productRefGroup = A40000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001,); };
+/* End PBXProject section */
+/* Begin PBXResourcesBuildPhase section */
+		A60000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+/* Begin PBXSourcesBuildPhase section */
+		A60000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001,A10000000000000000000002,A10000000000000000000003,A10000000000000000000004,A10000000000000000000005,A10000000000000000000006,A10000000000000000000007,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+/* Begin XCBuildConfiguration section */
+		B10000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 15.0; SWIFT_VERSION = 6.0;}; name = Debug; };
+		B10000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 15.0; SWIFT_VERSION = 6.0;}; name = Release; };
+		B10000000000000000000003 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = VaultMac/VaultMac.entitlements; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_APP_SANDBOX = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = VaultMac/Info.plist; MACOSX_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 0.1; PRODUCT_BUNDLE_IDENTIFIER = com.stevewong.vaultmac; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = macosx; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_TREAT_WARNINGS_AS_ERRORS = YES; SWIFT_VERSION = 6.0;}; name = Debug; };
+		B10000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = VaultMac/VaultMac.entitlements; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_APP_SANDBOX = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = VaultMac/Info.plist; MACOSX_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 0.1; PRODUCT_BUNDLE_IDENTIFIER = com.stevewong.vaultmac; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = macosx; SWIFT_STRICT_CONCURRENCY = complete; SWIFT_TREAT_WARNINGS_AS_ERRORS = YES; SWIFT_VERSION = 6.0;}; name = Release; };
+/* End XCBuildConfiguration section */
+/* Begin XCConfigurationList section */
+		A80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (B10000000000000000000001,B10000000000000000000002,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A80000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (B10000000000000000000003,B10000000000000000000004,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+/* Begin XCLocalSwiftPackageReference section */
+		A90000000000000000000003 = {isa = XCLocalSwiftPackageReference; relativePath = .; };
+/* End XCLocalSwiftPackageReference section */
+/* Begin XCSwiftPackageProductDependency section */
+		A90000000000000000000001 = {isa = XCSwiftPackageProductDependency; package = A90000000000000000000003; productName = VaultCore; };
+		A90000000000000000000002 = {isa = XCSwiftPackageProductDependency; package = A90000000000000000000003; productName = VaultAppCore; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A70000000000000000000001;
+}
