@@ -114,9 +114,10 @@ public enum PasswordCSVImporter {
 
             let title = optionalValue(row, at: titleIndex)?.trimmingCharacters(in: .whitespacesAndNewlines)
             let notes = optionalValue(row, at: notesIndex)
+            let resolvedTitle = title.flatMap { $0.isEmpty ? nil : $0 } ?? normalizedHost
 
             let credential = CredentialRecord(
-                title: (title?.isEmpty == false ? title! : normalizedHost),
+                title: resolvedTitle,
                 serviceURL: rawURL,
                 normalizedHost: normalizedHost,
                 username: username,
