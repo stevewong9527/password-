@@ -11,6 +11,7 @@ private struct RecoveryAdapter: MasterPasswordRecovering {
 }
 private struct EncryptedVaultStoreAdapter: EncryptedVaultStoring {
     let url: URL; private let store = VaultFileStore(cipher: AESGCMVaultCipher())
+    func hasVault() async -> Bool { FileManager.default.fileExists(atPath: url.path) }
     func createEmptyVault(using key: Data) async throws { try store.save(VaultDocument(records: []), to: url, key: key) }
     func recordCount(using key: Data) async throws -> Int { try store.load(from: url, key: key).records.count }
     func removeIncompleteVault() async { let fm = FileManager.default; try? fm.removeItem(at: url); try? fm.removeItem(at: url.appendingPathExtension("tmp")); try? fm.removeItem(at: url.appendingPathExtension("bak")) }
