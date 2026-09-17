@@ -40,6 +40,7 @@ public enum VaultCryptoError: Error, Equatable, Sendable {
     case authenticationFailed
     case invalidKeyLength
     case unsupportedEnvelopeVersion(Int)
+    case unsupportedDocumentVersion(Int)
 }
 
 public enum VaultStorageError: Error, Equatable, Sendable {
@@ -116,6 +117,10 @@ public struct VaultFileStore<Cipher: VaultCipher>: Sendable {
             VaultSealedBox(nonce: envelope.nonce, ciphertext: envelope.ciphertext, tag: envelope.tag),
             key: key
         )
-        return try decoder.decode(VaultDocument.self, from: plaintext)
+        let document = try decoder.decode(VaultDocument.self, from: plaintext)
+        guard document.version == 1 else {
+            throw VaultCryptoError.unsupportedDocumentVersion(document.version)
+        }
+        return document
     }
 }
