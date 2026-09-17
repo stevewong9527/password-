@@ -24,16 +24,21 @@ public enum VaultAppCoordinatorError: Error, Equatable, Sendable {
 
 public protocol SetupStatusStoring: Sendable {
     func isSetupComplete() async throws -> Bool
+    func hasPendingSetup() async -> Bool
+    func beginSetup() async throws
+    func clearPendingSetup() async
     func markSetupComplete(_ metadata: SetupMetadata) async throws
 }
 
 public protocol RecoveryEnvelopeStoring: Sendable {
+    func hasRecoveryEnvelope() async -> Bool
     func save(_ envelope: Data) async throws
     func load() async throws -> Data
     func removeIncompleteRecovery() async
 }
 
 public protocol EncryptedVaultStoring: Sendable {
+    func hasVault() async -> Bool
     func createEmptyVault(using key: Data) async throws
     func recordCount(using key: Data) async throws -> Int
     func removeIncompleteVault() async
@@ -128,7 +133,27 @@ public actor VaultAppCoordinator {
     public func bootstrap() async {
         lastError = nil
         do {
-            state = try await dependencies.setupStore.isSetupComplete() ? .locked : .needsSetup
+            if try await dependencies.setupStore.isSetupComplete() {
+                await dependencies.setupStore.clearPendingSetup()
+                state = .locked
+                return
+            }
+
+            if await dependencies.setupStore.hasPendingSetup() {
+                await cleanupIncompleteSetup()
+                state = .needsSetup
+                return
+            }
+
+            let hasRecovery = await dependencies.recoveryStore.hasRecoveryEnvelope()
+            let hasVault = await dependencies.vaultStore.hasVault()
+            if hasRecovery || hasVault {
+                state = .needsSetup
+                lastError = .vaultUnavailable
+                return
+            }
+
+            state = .needsSetup
         } catch {
             state = .needsSetup
             lastError = .vaultUnavailable
@@ -139,6 +164,24 @@ public actor VaultAppCoordinator {
         guard !masterPassword.isEmpty, masterPassword == confirmation else {
             throw VaultAppCoordinatorError.invalidPasswordConfirmation
         }
+
+        if try await dependencies.setupStore.isSetupComplete() {
+            lastError = .unableToCreateVault
+            throw VaultAppCoordinatorError.unableToCreateVault
+        }
+
+        if await dependencies.setupStore.hasPendingSetup() {
+            await cleanupIncompleteSetup()
+        } else {
+            let hasRecovery = await dependencies.recoveryStore.hasRecoveryEnvelope()
+            let hasVault = await dependencies.vaultStore.hasVault()
+            if hasRecovery || hasVault {
+                lastError = .vaultUnavailable
+                throw VaultAppCoordinatorError.unableToCreateVault
+            }
+        }
+
+        try await dependencies.setupStore.beginSetup()
 
         var key = try dependencies.keyGenerator.generateVaultKey()
         defer { key.resetBytes(in: 0..<key.count) }
@@ -157,6 +200,7 @@ public actor VaultAppCoordinator {
             try await dependencies.deviceKeyStore.install(key)
             deviceKeyInstalled = true
             try await dependencies.setupStore.markSetupComplete(SetupMetadata())
+            await dependencies.setupStore.clearPendingSetup()
 
             do {
                 try await dependencies.session.installVerifiedVaultKey(key)
@@ -173,6 +217,7 @@ public actor VaultAppCoordinator {
             if deviceKeyInstalled {
                 await dependencies.deviceKeyStore.removeIncompleteKey()
             }
+            await dependencies.setupStore.clearPendingSetup()
             state = .needsSetup
             lastError = .unableToCreateVault
             throw VaultAppCoordinatorError.unableToCreateVault
@@ -229,6 +274,13 @@ public actor VaultAppCoordinator {
             lastError = .recoveryPasswordNotAccepted
             throw VaultAppCoordinatorError.unableToUnlock
         }
+    }
+
+    private func cleanupIncompleteSetup() async {
+        await dependencies.recoveryStore.removeIncompleteRecovery()
+        await dependencies.vaultStore.removeIncompleteVault()
+        await dependencies.deviceKeyStore.removeIncompleteKey()
+        await dependencies.setupStore.clearPendingSetup()
     }
 
     public func lock() async {
