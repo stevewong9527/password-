@@ -111,6 +111,24 @@ private func record(password: String = "SecretMarker-42") -> CredentialRecord {
     }
 }
 
+@Test func successfulReplacementKeepsPreviousEncryptedBackup() throws {
+    let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("vault.vault")
+    let backupURL = url.appendingPathExtension("bak")
+    let store = VaultFileStore(cipher: FakeCipher(marker: 5))
+    let key = Data(repeating: 4, count: 32)
+    let original = VaultDocument(records: [record(password: "Original-Secret")])
+    let updated = VaultDocument(records: [record(password: "Updated-Secret")])
+
+    try store.save(original, to: url, key: key)
+    try store.save(updated, to: url, key: key)
+
+    #expect(try store.load(from: url, key: key) == updated)
+    #expect(FileManager.default.fileExists(atPath: backupURL.path))
+    #expect(try store.load(from: backupURL, key: key) == original)
+}
+
 #if canImport(CryptoKit)
 @Test func aesGCMRoundTripUsesFreshNonceAndRejectsTampering() throws {
     let cipher = AESGCMVaultCipher()
