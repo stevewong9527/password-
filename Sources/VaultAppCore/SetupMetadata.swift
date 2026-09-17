@@ -15,3 +15,8 @@ public struct SetupMetadata: Codable, Equatable, Sendable {
         self.recoveryFormatVersion = recoveryFormatVersion
     }
 }
+
+public struct PendingSetupMetadata: Codable, Equatable, Sendable {
+    public let formatVersion: Int
+    public init(formatVersion: Int = 1) { self.formatVersion = formatVersion }
+}
