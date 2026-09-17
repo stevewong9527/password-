@@ -20,6 +20,10 @@ let package = Package(
         .testTarget(
             name: "VaultCoreTests",
             dependencies: ["VaultCore"]
+        ),
+        .testTarget(
+            name: "VaultCryptoTests",
+            dependencies: ["VaultCore"]
         )
     ]
 )
