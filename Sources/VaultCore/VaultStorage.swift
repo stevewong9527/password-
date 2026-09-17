@@ -90,7 +90,7 @@ public struct VaultFileStore<Cipher: VaultCipher>: Sendable {
                 url,
                 withItemAt: temporaryURL,
                 backupItemName: backupURL.lastPathComponent,
-                options: []
+                options: [.withoutDeletingBackupItem]
             )
 #else
             try FileManager.default.moveItem(at: url, to: backupURL)
