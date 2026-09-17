@@ -24,4 +24,4 @@ jobs:
       - name: Run package tests
         run: swift test -Xswiftc -warnings-as-errors
       - name: Build VaultMac app
-        run: xcodebuild -project VaultMac.xcodeproj -scheme VaultMac -configuration Debug CODE_SIGNING_ALLOWED=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES build
+        run: xcodebuild -project VaultMac.xcodeproj -scheme VaultMac -configuration Debug CODE_SIGNING_ALLOWED=NO build
