@@ -1,37 +1,22 @@
 # VaultMac Milestone 4A — macOS App Design
 
-Date: 2026-09-17
-Branch: `feature/mvp-core`
+Date: 2026-09-17  
+Branch: `feature/mvp-core`  
+Status: Automated implementation complete; real-Mac manual gate pending
 
 ## Goal
 
-Turn the existing tested `VaultCore` package into a real sandboxed macOS SwiftUI application that can create a new encrypted vault, protect its random 256-bit vault key through both macOS Keychain user-presence and master-password recovery, lock, and unlock again through either path.
+Turn the tested `VaultCore` package into a real sandboxed macOS SwiftUI application that can create a new encrypted vault, protect its random 256-bit vault key through both macOS Keychain user-presence and master-password recovery, lock, and unlock again through either path.
 
-Milestone 4A deliberately stops before credential list/edit/import UI. Its acceptance condition is a working secure application shell whose first-run and unlock lifecycle is complete.
+Milestone 4A deliberately stops before credential list/edit/import UI. Its automated acceptance condition is a secure application shell whose first-run and unlock lifecycle builds and tests on macOS 15 CI. Full 4A completion additionally requires the real-Mac checklist in `docs/MANUAL_TEST_4A.md`.
 
 ## Product slice
 
-The app presents only three primary states in this milestone:
+The app presents three primary states:
 
-1. **Welcome / Create Vault**
-   - shown when no vault metadata exists;
-   - user enters and confirms a master password;
-   - app generates a random 256-bit vault key;
-   - app creates an empty encrypted vault;
-   - app creates an Argon2id/AES-GCM recovery envelope for the same vault key;
-   - app installs the same vault key in macOS Keychain using user-presence access control.
-
-2. **Locked**
-   - default state for an existing vault after launch;
-   - primary action: unlock through the Keychain path, which allows Touch ID or the system authentication fallback selected by macOS;
-   - secondary action: unlock with the master password and recovery envelope;
-   - failed master-password recovery is governed by the existing exponential recovery backoff state.
-
-3. **Unlocked Shell**
-   - proves the vault can be decrypted using the active `VaultSession` key;
-   - displays only basic vault status and record count;
-   - provides an explicit Lock action;
-   - credential browsing and editing are out of scope for 4A.
+1. **Welcome / Create Vault** — user enters and confirms a master password; the app creates an empty encrypted vault, recovery envelope, and Keychain-protected copy of the same random vault key.
+2. **Locked** — normal state after relaunch; user can unlock through macOS user-presence authentication or the master-password recovery path.
+3. **Unlocked Shell** — proves the vault can be authenticated/decrypted, shows record count, and provides explicit Lock. Credential browsing/editing remains out of scope.
 
 ## App identity
 
@@ -39,264 +24,254 @@ The app presents only three primary states in this milestone:
 - Bundle identifier: `com.stevewong.vaultmac`
 - Platform: macOS 15+
 - UI: SwiftUI
-- App Sandbox: enabled from the first app target
+- Swift: Swift 6 with strict concurrency and warnings-as-errors
+- App Sandbox: enabled; no unnecessary network or user-file entitlements in 4A
 
-The bundle identifier is provisional and can be changed before external distribution, but all 4A storage identifiers must be centralized so a later rename does not silently orphan vault or Keychain state.
+Storage and Keychain identifiers are centralized so a future bundle-id/product rename can be handled explicitly rather than silently orphaning user state.
 
 ## Architecture
 
-`VaultCore` remains the security/domain layer. The macOS app target owns lifecycle, persistence locations, and UI state, but must not reimplement cryptography.
+`VaultCore` remains the cryptographic/domain layer. `VaultAppCore` owns the testable app lifecycle/coordinator state machine. The `VaultMac` target owns macOS-specific dependency wiring and SwiftUI presentation.
 
 ```text
 VaultMac.app
     │
     ▼
-AppCoordinator / AppModel
+AppModel / SwiftUI
     │
-    ├── first-run detection
-    ├── create-vault transaction
-    ├── locked/unlocked presentation state
-    └── recovery attempt backoff
+    ▼
+VaultAppCoordinator  (VaultAppCore)
     │
-    ├───────────────┐
-    ▼               ▼
-VaultSession   RecoveryService
-    │               │
-    ▼               ▼
-Keychain       Argon2id + AES-GCM
-Provider       Recovery Envelope
+    ├───────────────┬─────────────────┐
+    ▼               ▼                 ▼
+VaultSession   RecoveryService    VaultFileStore
+    │               │                 │
+    ▼               ▼                 ▼
+Keychain       Argon2id + AES-GCM  Encrypted Vault
     │               │
     └───────┬───────┘
             ▼
-      Random 256-bit Vault Key
-            │
-            ▼
-       VaultFileStore
-            │
-            ▼
-       Encrypted Vault
+      same random 256-bit
+          Vault Key
 ```
-
-## Boundaries
 
 ### `VaultCore`
 
-Existing responsibilities stay unchanged:
+Security/domain responsibilities:
 
 - `VaultSession`: short-lived in-memory key cache and explicit lock;
-- `KeychainVaultKeyProvider`: user-presence protected device-local key retrieval;
-- `RecoveryService`: master-password recovery envelope creation and unwrap;
+- `KeychainVaultKeyProvider`: user-presence protected device-local vault-key retrieval;
+- `RecoveryService`: master-password recovery envelope create/unwrap;
+- `SodiumArgon2IDKDF`: Argon2id13 KDF from pinned `swift-sodium` 0.11.0;
 - `AESGCMVaultCipher`: authenticated encryption;
-- `SodiumArgon2IDKDF`: Argon2id KDF;
 - `VaultFileStore`: versioned encrypted vault persistence.
 
-4A may add narrowly-scoped interfaces only when the app cannot test lifecycle behavior without them. UI-specific state must not be added to `VaultCore`.
+UI-specific state does not belong in `VaultCore`.
 
-### App layer
+### `VaultAppCore`
 
-The app layer owns:
+Responsibilities:
 
-- deciding whether first-run setup is required;
-- deriving standard application-support paths;
-- sequencing setup so partial creation cannot be mistaken for a complete vault;
-- translating domain errors into generic user-facing states without logging secrets;
-- calling `VaultSession.lock()` on explicit lock and relevant app lifecycle events;
-- presenting SwiftUI screens.
+- first-run/completed/incomplete setup detection;
+- transaction sequencing;
+- fail-safe artifact-existence checks;
+- locked/unlocked presentation state;
+- recovery-attempt backoff;
+- generic user-facing error categories;
+- testable protocols around filesystem, Keychain install, recovery, and session access.
+
+### `VaultMac`
+
+Responsibilities:
+
+- Application Support path selection;
+- production adapters for Keychain, Argon2id, AES-GCM and vault storage;
+- SwiftUI screens and app lifecycle;
+- no duplicated cryptographic implementation.
 
 ## Persistence layout
 
-All files live inside the app's sandboxed Application Support container.
-
-Logical names:
+All files live inside the sandboxed Application Support container:
 
 ```text
 Application Support/VaultMac/
     vault.vault
     vault.vault.bak
     recovery.json
+    setup.pending
     setup.json
 ```
 
 ### `vault.vault`
 
-Existing versioned encrypted vault envelope. No plaintext credential metadata is stored here.
+Existing versioned encrypted vault envelope. Credential metadata is contained inside authenticated ciphertext.
 
 ### `recovery.json`
 
-Stores only the versioned `RecoveryEnvelope`: KDF identifier/parameters, salt, AES-GCM nonce/ciphertext/tag. It does not store the master password or plaintext vault key.
+Versioned `RecoveryEnvelope`: KDF identifier/parameters, salt, AES-GCM nonce/ciphertext/tag. It does not contain the master password or plaintext vault key.
+
+### `setup.pending`
+
+A non-secret transaction marker indicating that a first-run setup was started but not yet committed. It contains only version metadata.
+
+This marker is security-significant for data preservation:
+
+- if `setup.pending` exists, the app may treat recovery/vault/Keychain artifacts as belonging to an interrupted setup and clean them before retrying;
+- if `setup.pending` is absent but `vault.vault` or `recovery.json` exists while `setup.json` is missing/corrupt, the app must **not** overwrite or delete those artifacts automatically;
+- that state is reported as unavailable/incomplete and requires explicit recovery/repair work rather than a destructive new setup.
 
 ### `setup.json`
 
-Non-secret app installation metadata only. It records format/version identifiers needed to decide that setup completed successfully. It must not contain usernames, passwords, credential metadata, the vault key, or master-password-derived material.
-
-The Keychain service/account identifiers are constants owned by the app configuration layer rather than duplicated in views.
+Non-secret completion metadata only. It is written last, after the required security artifacts have succeeded. It contains no usernames, passwords, credential metadata, vault key, master password, or password-derived material.
 
 ## First-run transaction
 
-Creating a vault must be treated as a transaction. The app must not create `setup.json` until all required security artifacts have been written successfully.
+The setup operation is treated as a transaction.
 
 Sequence:
 
-1. validate master-password confirmation and non-empty input;
-2. generate random 32-byte vault key through the existing CryptoKit vault-key generator;
-3. create recovery envelope using `SodiumArgon2IDKDF` and `AESGCMVaultCipher`;
-4. write `recovery.json` atomically;
-5. write an empty encrypted `VaultDocument` through `VaultFileStore` using the random vault key;
-6. install the same key into `KeychainVaultKeyProvider`;
-7. write `setup.json` last;
-8. install the key into `VaultSession` only through a narrow, testable bootstrap path, or perform a normal provider unlock if practical;
-9. transition to unlocked shell.
+1. validate non-empty matching master-password fields;
+2. refuse setup if a completed setup already exists;
+3. if an old `setup.pending` exists, clean only artifacts belonging to that interrupted setup;
+4. if no pending marker exists but an existing vault or recovery envelope is present, refuse setup and preserve the artifacts;
+5. write `setup.pending` atomically;
+6. generate a random 32-byte vault key through the existing secure vault-key generator;
+7. create a recovery envelope using `SodiumArgon2IDKDF` + `AESGCMVaultCipher`;
+8. write `recovery.json` atomically;
+9. write an empty encrypted `VaultDocument` through `VaultFileStore` using the random vault key;
+10. install the same vault key into `KeychainVaultKeyProvider`;
+11. write `setup.json` last;
+12. clear `setup.pending`;
+13. install the verified key into `VaultSession` and verify the encrypted vault can be opened;
+14. transition to the unlocked shell, or remain locked if post-commit session bootstrap cannot complete.
 
-If any step before `setup.json` fails, the next launch must still enter a recoverable setup state instead of treating the vault as ready. 4A may clean up incomplete non-Keychain artifacts created by the failed transaction. It must never overwrite an existing completed vault silently.
+A failure during an active pending transaction cleans incomplete artifacts and leaves setup incomplete. Existing artifacts that are not associated with a pending transaction are never silently overwritten or deleted.
 
 ## Unlock flows
 
-### Keychain / Touch ID path
+### Device / Keychain path
 
 1. Locked view requests unlock.
 2. `VaultSession.unlock(reason:)` asks `KeychainVaultKeyProvider` for the vault key.
-3. macOS presents user-presence authentication as required by the Keychain item.
-4. `VaultSession` validates the returned key is exactly 32 bytes.
-5. App attempts to load/decrypt `vault.vault` before transitioning UI to unlocked.
-6. Any authentication or decryption error leaves the app locked.
+3. macOS performs user-presence authentication (Touch ID when available or OS-provided fallback).
+4. `VaultSession` validates the key is exactly 32 bytes.
+5. App loads/authenticates/decrypts `vault.vault` before transitioning to unlocked.
+6. Any authentication/decryption error clears the active session and leaves the app locked.
 
-The app must not claim Touch ID specifically when macOS may use system password fallback. UI copy should say `Unlock` or `Unlock with Touch ID / Mac password` only when that wording matches actual system behavior.
+UI copy does not promise Touch ID exclusively because macOS can use system-password fallback.
 
 ### Master-password recovery path
 
-1. User selects `Use Master Password`.
-2. App enforces the in-memory recovery backoff gate before a new attempt.
+1. User chooses `Use Master Password`.
+2. App enforces the in-memory recovery-attempt backoff.
 3. App loads `recovery.json`.
-4. `RecoveryService` derives the wrapping key using stored Argon2id parameters, rejects unsupported/weak parameters, and authenticates the envelope.
+4. `RecoveryService` validates envelope/KDF policy, derives the wrapping key with Argon2id13, and authenticates/decrypts the wrapped vault key.
 5. Returned vault key must be exactly 32 bytes.
-6. App verifies the key by loading/decrypting `vault.vault`.
-7. On success, the key is installed into the active `VaultSession`, recovery backoff resets, and UI transitions to unlocked.
-8. On failure, the app remains locked and records a failure in the in-memory backoff state.
+6. App verifies the recovered key by opening `vault.vault`.
+7. On success, the key is installed into `VaultSession`, the backoff resets, and the app transitions to unlocked.
+8. On failure, the session is locked and a generic recovery error is shown.
 
-Recovery must not modify or replace the Keychain item automatically. Repair/re-enrollment is a later explicit flow.
+Recovery does not automatically replace or re-enrol the Keychain item.
 
 ## Locking
 
-4A supports explicit Lock immediately. Locking must call `VaultSession.lock()`, which clears the cached key bytes before dropping the cache.
+Explicit Lock calls `VaultSession.lock()`, which clears cached key bytes before dropping the cache. The unlocked record-count presentation state is discarded when the coordinator transitions to locked.
 
-Automatic lock triggers for sleep, screen lock, inactivity, and app backgrounding are a later 4B hardening slice unless a minimal reliable lifecycle hook is required to prevent obvious leakage during 4A testing.
-
-No decrypted `VaultDocument` should be kept in a global singleton after lock. The app shell may retain only non-secret presentation state such as record count if that is deliberately classified as acceptable metadata; the safer 4A default is to clear it on lock.
+Sleep/workstation/inactivity auto-lock policies are later hardening slices.
 
 ## Error handling and logging
 
-User-facing errors are deliberately generic:
+User-facing errors remain generic, for example:
 
 - unable to create vault;
 - unable to unlock;
 - recovery password was not accepted;
 - vault data is unavailable or damaged.
 
-Diagnostic logs must never include:
+Never log or expose through diagnostics:
 
 - master password;
 - vault key;
-- password-derived key;
+- password-derived wrapping key;
 - credential values;
 - recovery ciphertext/salt/tag dumps;
 - decrypted vault JSON.
 
-Detailed domain errors may be mapped to internal enum cases for tests, but production UI should not reveal cryptographic oracle detail such as whether a wrong password or modified tag caused authentication failure.
+Production UI does not expose cryptographic-oracle detail such as distinguishing wrong password from modified authentication tag.
 
-## UI details
+## UI
 
-### Welcome / Create Vault
+### Create Vault
 
-Fields:
-
-- Master Password (`SecureField`)
-- Confirm Master Password (`SecureField`)
-
-Controls:
-
-- `Create Vault`
-
-Validation:
-
-- both fields must be non-empty;
-- fields must match;
-- no arbitrary composition rule is imposed in 4A;
-- master password is not persisted in SwiftUI state after successful setup.
+- `SecureField` Master Password
+- `SecureField` Confirm Master Password
+- Create Vault button
+- reject empty/mismatched fields
+- clear both fields after success
 
 ### Locked
 
-Controls:
-
-- `Unlock`
-- `Use Master Password`
-
-Master-password sheet/panel:
-
-- one `SecureField`;
-- retry state reflects recovery backoff without exposing crypto details.
+- Unlock button for macOS user-presence path
+- Use Master Password button/sheet
+- retry-delay presentation for recovery backoff
 
 ### Unlocked Shell
 
-Shows:
-
 - `Vault Unlocked`
 - record count
-- `Lock`
+- Lock button
 
 No credential values are displayed in 4A.
 
-## Testing strategy
+## Automated testing and CI
 
-### Portable/domain tests
+Required regression coverage includes:
 
-Use fake key providers, fake ciphers/KDFs where appropriate, and a temporary filesystem to test an app coordinator or setup service without invoking real biometric UI.
-
-Required behavior tests:
-
-- clean install is detected as first run;
-- completed setup is detected as existing vault;
-- setup marker is written only after vault, recovery envelope, and Keychain-install abstraction all succeed;
-- a failed setup step does not produce a completed setup marker;
-- locked state cannot expose a vault key;
-- wrong recovery password leaves state locked and increments backoff;
-- successful recovery resets backoff and reaches unlocked state;
-- explicit lock clears session and decrypted app state.
-
-### macOS CI
+- clean install -> needs setup;
+- completed setup -> locked;
+- setup completion ordering is recovery -> vault -> Keychain -> setup marker;
+- failed Keychain install does not produce completed setup;
+- wrong recovery remains locked and increments backoff;
+- successful recovery resets backoff and unlocks only after vault verification;
+- explicit lock clears session/presentation state;
+- existing vault/recovery artifacts with no pending marker cannot be overwritten/deleted by Create Vault;
+- pending marker allows cleanup/retry of a genuinely interrupted setup.
 
 GitHub macOS 15 CI must:
 
-- resolve pinned `swift-sodium 0.11.0`;
-- run existing `swift test -Xswiftc -warnings-as-errors`;
-- build the actual `VaultMac` macOS app target with warnings treated as errors;
-- run app-layer unit tests that do not require interactive Touch ID.
+- resolve pinned `swift-sodium` 0.11.0;
+- run `swift test -Xswiftc -warnings-as-errors`;
+- build the real `VaultMac` app target through `xcodebuild` with signing disabled;
+- never invoke interactive LocalAuthentication prompts.
 
-CI must not attempt interactive LocalAuthentication prompts.
+## Real-Mac manual gate
 
-### Manual test gate
+Before 4A is marked fully complete, run and record `docs/MANUAL_TEST_4A.md`, including:
 
-On a real Mac before 4A is marked complete:
-
-- first run creates vault successfully;
-- app relaunch enters Locked state;
-- Keychain unlock presents system user-presence authentication and opens vault;
-- explicit lock works;
-- master-password recovery opens the same vault;
-- wrong master password stays locked;
-- deleting/corrupting test recovery/vault artifacts fails closed with no crash.
+- first-run setup;
+- relaunch into Locked state;
+- system user-presence authentication;
+- Touch ID where available and OS password fallback where offered;
+- explicit lock;
+- correct/incorrect master-password recovery;
+- retry backoff;
+- recovery/vault corruption fail-closed checks;
+- missing `setup.json` with no pending marker must preserve existing vault/recovery artifacts.
 
 ## Security invariants
 
-The following are non-negotiable for this milestone:
+Non-negotiable for 4A:
 
-- the persisted vault key exists only encrypted/wrapped or inside macOS Keychain;
+- persisted vault key exists only wrapped/encrypted or inside macOS Keychain;
 - master password is never persisted;
-- the random vault key remains the single key protecting `vault.vault` regardless of unlock method;
-- recovery does not create a second vault or second copy of credential plaintext;
-- all vault decryption must authenticate before data is used;
-- setup completion is written last;
+- both unlock paths produce the same random 256-bit vault key;
+- recovery does not create a second credential vault;
+- vault ciphertext is authenticated before plaintext is used;
+- `setup.json` is the final completion marker;
+- `setup.pending` is the only automatic-cleanup authorization for an interrupted first-run transaction;
+- existing unmarked vault/recovery artifacts are preserved fail-safe;
 - no secret is placed in Git fixtures, logs, crash messages, or UI diagnostics;
-- no new custom cryptographic primitive is introduced.
+- no custom cryptographic primitive is introduced.
 
 ## Out of scope for 4A
 
@@ -309,19 +284,20 @@ The following are non-negotiable for this milestone:
 - cloud sync;
 - master-password change;
 - Keychain repair/re-enrollment;
-- automatic workstation/sleep/inactivity lock policy beyond any minimal lifecycle safety hook;
+- inactivity/workstation auto-lock hardening;
 - distribution signing/notarization/App Store submission.
 
 ## Acceptance criteria
 
-Milestone 4A is complete only when:
+Automated 4A work is complete when:
 
-1. a sandboxed `VaultMac` macOS app target builds successfully;
-2. first-run setup produces an empty encrypted vault, recovery envelope, Keychain-protected vault key, and completion marker in the intended order;
-3. a subsequent launch starts locked;
-4. Keychain user-presence unlock can decrypt the vault;
-5. master-password recovery can decrypt the same vault without changing the encrypted vault format;
+1. sandboxed `VaultMac` app target builds successfully on macOS 15 CI;
+2. first-run setup produces encrypted vault, recovery envelope, Keychain-protected key and completion marker in the intended order;
+3. crash/interrupted setup is recoverable through `setup.pending` without enabling deletion of unrelated/existing vault artifacts;
+4. subsequent launch starts locked;
+5. Keychain and master-password paths can authenticate/decrypt the same vault;
 6. wrong-password/tampered-data paths fail closed;
 7. explicit Lock clears the active vault session;
-8. automated portable tests and macOS CI are green;
-9. real-Mac manual user-presence and recovery checks are recorded before declaring the milestone fully complete.
+8. package tests and real app build are green in CI.
+
+Full Milestone 4A remains **IN PROGRESS** until the real-Mac checklist is executed and recorded successfully.
