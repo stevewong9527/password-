@@ -1,0 +1,39 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# macOS
+.DS_Store
+
+# Password exports / vaults / recovery material
+*.csv
+*.vault
+*.vaultbackup
+*.vault-backup
+*.recovery
+*.recovery-key
+passwords*.txt
+exported_passwords*
+
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.cer
+*.mobileprovision
+*.provisionprofile
+secrets.*
+
+# Logs and crash dumps
+*.log
+*.crash
