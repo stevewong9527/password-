@@ -130,3 +130,13 @@ private func fixtureDocument() -> VaultDocument {
         try VaultCipher.open(data, using: key)
     }
 }
+
+@Test func unsupportedVaultDocumentVersionIsRejectedAfterAuthentication() throws {
+    let key = VaultKey.generate()
+    let unsupported = VaultDocument(version: 999, records: fixtureDocument().records)
+    let encrypted = try VaultCipher.seal(unsupported, using: key)
+
+    #expect(throws: VaultCryptoError.unsupportedDocumentVersion(999)) {
+        try VaultCipher.open(encrypted, using: key)
+    }
+}
