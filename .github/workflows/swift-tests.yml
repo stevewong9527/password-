@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - main
-      - 'feature/**'
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
 
 jobs:
   test:
