@@ -36,6 +36,34 @@ private func fixtureDocument() -> VaultDocument {
     #expect(opened == document)
 }
 
+@Test func emptyVaultRoundTrips() throws {
+    let key = VaultKey.generate()
+    let document = VaultDocument(version: 1, records: [])
+
+    let encrypted = try VaultCipher.seal(document, using: key)
+    #expect(try VaultCipher.open(encrypted, using: key) == document)
+}
+
+@Test func largeSyntheticVaultRoundTrips() throws {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let records = (0..<2_000).map { index in
+        CredentialRecord(
+            title: "Synthetic \(index)",
+            serviceURL: "https://service\(index).example.test/login",
+            normalizedHost: "service\(index).example.test",
+            username: "user\(index)@example.test",
+            password: "SyntheticPassword-\(index)-!",
+            createdAt: now,
+            updatedAt: now
+        )
+    }
+    let key = VaultKey.generate()
+    let document = VaultDocument(version: 1, records: records)
+
+    let encrypted = try VaultCipher.seal(document, using: key)
+    #expect(try VaultCipher.open(encrypted, using: key) == document)
+}
+
 @Test func persistedEnvelopeDoesNotContainKnownPlaintext() throws {
     let key = VaultKey.generate()
     let encrypted = try VaultCipher.seal(fixtureDocument(), using: key)
