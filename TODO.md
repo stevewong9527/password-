@@ -11,7 +11,6 @@ Active branch: `feature/mvp-core`
 - Keep security-sensitive changes small enough to review independently.
 - Prefer Apple system frameworks and audited libraries over custom cryptography.
 - Batch GitHub writes so one logical change creates one CI cycle.
-- Update this file after each completed implementation/review cycle.
 
 ## Milestone 0 — Repository bootstrap — COMPLETE
 
@@ -29,67 +28,60 @@ Active branch: `feature/mvp-core`
 
 ## Milestone 2 — Encrypted vault storage — COMPLETE
 
-- [x] Versioned `VaultEnvelope` and `VaultDocument`.
+- [x] Versioned vault envelope/document.
 - [x] AES-256-GCM through CryptoKit with fresh nonce.
-- [x] Plaintext-at-rest regression test and tamper fail-closed test.
-- [x] Atomic replacement + recoverable encrypted `.bak`.
-- [x] Unsupported envelope/document versions rejected.
-- [x] Empty and 5,000-record vault tests.
+- [x] Plaintext-at-rest and tamper fail-closed regression tests.
+- [x] Atomic replacement + encrypted `.bak` recovery copy.
+- [x] Empty + 5,000-record vault coverage.
 - [x] `docs/VAULT_FORMAT.md`.
 
-## Milestone 3 — Key management and unlock — IN PROGRESS
+## Milestone 3 — Key management and unlock — COMPLETE FOR CORE
 
-### 3A Device-local key path — COMPLETE EXCEPT APP MANUAL TEST
+### 3A Device-local key path
 
-- [x] `VaultKeyProvider` and `VaultSession`.
-- [x] Locked session cannot release usable vault key material.
-- [x] Explicit lock clears cached session key state.
+- [x] `VaultKeyProvider` + `VaultSession`.
+- [x] Lock clears cached key state.
 - [x] Reject non-256-bit key material.
-- [x] macOS Keychain provider with `ThisDeviceOnly` + user presence.
-- [x] `LAContext` interaction path.
-- [x] macOS CI compiles/tests platform code.
-- [ ] Manual Touch ID / system-password retrieval test once app target exists.
+- [x] macOS Keychain provider with `ThisDeviceOnly` + user presence and `LAContext`.
+- [x] macOS CI coverage.
+- [ ] Manual Touch ID/system-password retrieval once app target exists.
 
-### 3B Master-password recovery — CODE COMPLETE, CI PENDING
+### 3B Master-password recovery
 
-- [x] Pin reviewed Argon2id implementation: `jedisct1/swift-sodium` `0.11.0`.
-- [x] Define versioned recovery-key wrapping envelope.
-- [x] Wrong master password cannot unwrap vault key.
-- [x] Modified recovery envelope fails closed.
-- [x] Store KDF salt + parameters; never store master password.
-- [x] Reject KDF parameters below production policy; no silent downgrade.
-- [x] Wrap the same random 256-bit vault key rather than encrypting vault records with the master password.
-- [x] Document format/policy in `docs/RECOVERY_FORMAT.md`.
-- [x] Local fake-KDF recovery tests pass with warnings as errors.
-- [ ] macOS CI verifies real libsodium Argon2id + CryptoKit integration.
-- [ ] Add UI/session backoff for repeated recovery attempts.
+- [x] Pin `jedisct1/swift-sodium` `0.11.0`.
+- [x] Argon2id13 recovery envelope around the same random 256-bit vault key.
+- [x] Store salt + KDF parameters, never master password.
+- [x] Wrong password/tamper fail closed.
+- [x] Reject weaker KDF parameters; no silent downgrade.
+- [x] Real libsodium Argon2id + CryptoKit integration passes macOS CI.
+- [x] Recovery backoff policy/state machine: 1s, 2s, 4s... capped at 30s and reset on success.
+- [x] `docs/RECOVERY_FORMAT.md`.
 
-## Milestone 4 — macOS SwiftUI application
+## Milestone 4 — macOS SwiftUI application — NEXT
 
-- [ ] Create Xcode macOS app target with App Sandbox.
-- [ ] First-run vault creation/unlock flow.
+- [ ] Create macOS SwiftUI app target with App Sandbox.
+- [ ] First-run vault creation/unlock/recovery flow.
 - [ ] Credential list/search/detail UI.
 - [ ] Add/edit/delete credential flows.
-- [ ] Import picker + preview + conflict-resolution UI.
+- [ ] Import picker + preview + conflict resolution.
 - [ ] Password generator UI.
-- [ ] Clipboard copy with safe delayed clear.
+- [ ] Clipboard safe delayed clear.
 - [ ] Auto-lock and workstation-lock handling.
 - [ ] Local reused/weak password audit.
 
 ## Milestone 5 — AutoFill Credential Provider
 
-- [ ] Add Credential Provider Extension target.
-- [ ] App Group encrypted vault sharing.
+- [ ] Credential Provider Extension + App Group.
 - [ ] `ASCredentialIdentityStore` without passwords.
-- [ ] Domain-safe credential selection and fail-closed matching.
+- [ ] Domain-safe credential matching and fail-closed behavior.
 
 ## Milestone 6 — Backup, restore and release hardening
 
 - [ ] Encrypted backup/restore.
 - [ ] Explicit plaintext interoperability export with warning + re-authentication.
 - [ ] Privacy/security docs, App Store/export compliance, dependency/SBOM review.
-- [ ] Manual security regression + threat-model review before public beta.
+- [ ] Manual security regression + threat-model review.
 
 ## Next execution batch
 
-Wait for macOS CI on Milestone 3B. If green, add recovery-attempt backoff as a small independent policy component, then start the macOS SwiftUI app shell and real first-run/unlock flow.
+Start Milestone 4 with the native macOS SwiftUI app shell and first-run create/unlock flow. Integrate the existing `VaultSession`, Keychain provider, encrypted vault storage and recovery-attempt limiter without changing the vault format.
