@@ -15,15 +15,8 @@ public struct VaultAppConfiguration: Equatable, Sendable {
         self.keychainAccount = keychainAccount
     }
 
-    public var vaultURL: URL {
-        applicationSupportDirectory.appendingPathComponent("vault.vault", isDirectory: false)
-    }
-
-    public var recoveryURL: URL {
-        applicationSupportDirectory.appendingPathComponent("recovery.json", isDirectory: false)
-    }
-
-    public var setupURL: URL {
-        applicationSupportDirectory.appendingPathComponent("setup.json", isDirectory: false)
-    }
+    public var vaultURL: URL { applicationSupportDirectory.appendingPathComponent("vault.vault") }
+    public var recoveryURL: URL { applicationSupportDirectory.appendingPathComponent("recovery.json") }
+    public var setupURL: URL { applicationSupportDirectory.appendingPathComponent("setup.json") }
+    public var pendingSetupURL: URL { applicationSupportDirectory.appendingPathComponent("setup.pending") }
 }
