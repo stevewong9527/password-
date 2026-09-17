@@ -40,11 +40,10 @@ Active branch: `feature/mvp-core`
 ### 3A Device-local key path
 
 - [x] `VaultKeyProvider` + `VaultSession`.
-- [x] Lock clears cached key state.
-- [x] Reject non-256-bit key material.
+- [x] Lock clears cached key state and rejects non-256-bit key material.
 - [x] macOS Keychain provider with `ThisDeviceOnly` + user presence and `LAContext`.
 - [x] macOS CI coverage.
-- [ ] Manual Touch ID/system-password retrieval once app target exists.
+- [ ] Real-Mac Touch ID/system-password retrieval check (`docs/MANUAL_TEST_4A.md`).
 
 ### 3B Master-password recovery
 
@@ -57,10 +56,26 @@ Active branch: `feature/mvp-core`
 - [x] Recovery backoff policy/state machine: 1s, 2s, 4s... capped at 30s and reset on success.
 - [x] `docs/RECOVERY_FORMAT.md`.
 
-## Milestone 4 — macOS SwiftUI application — NEXT
+## Milestone 4 — macOS SwiftUI application — IN PROGRESS
 
-- [ ] Create macOS SwiftUI app target with App Sandbox.
-- [ ] First-run vault creation/unlock/recovery flow.
+### 4A Secure app shell — AUTOMATED WORK COMPLETE
+
+- [x] Create native `VaultMac.xcodeproj` for macOS 15+ and bundle id `com.stevewong.vaultmac`.
+- [x] Enable App Sandbox with no unnecessary network/file entitlements.
+- [x] Wire `VaultAppCore` to Keychain, Argon2id, AES-GCM and encrypted vault storage.
+- [x] First-run Create Vault screen with master-password confirmation.
+- [x] Locked screen with device-authentication unlock and master-password recovery sheet.
+- [x] Unlocked shell with record count and explicit Lock.
+- [x] Setup completion marker is written only after recovery, vault and Keychain steps succeed.
+- [x] Add `setup.pending` transaction marker so interrupted setup can be cleaned safely.
+- [x] Existing vault/recovery artifacts without a pending marker are never silently overwritten or deleted.
+- [x] Package tests run with warnings-as-errors.
+- [x] GitHub macOS 15 CI builds the real `VaultMac` app with signing disabled.
+- [x] Add real-Mac checklist at `docs/MANUAL_TEST_4A.md`.
+- [ ] Execute and record the real-Mac first-run, Touch ID/system-password, recovery and corruption checklist.
+
+### Later Milestone 4 slices
+
 - [ ] Credential list/search/detail UI.
 - [ ] Add/edit/delete credential flows.
 - [ ] Import picker + preview + conflict resolution.
@@ -84,4 +99,4 @@ Active branch: `feature/mvp-core`
 
 ## Next execution batch
 
-Start Milestone 4 with the native macOS SwiftUI app shell and first-run create/unlock flow. Integrate the existing `VaultSession`, Keychain provider, encrypted vault storage and recovery-attempt limiter without changing the vault format.
+Run `docs/MANUAL_TEST_4A.md` on a real Mac. Once the interactive checklist passes, mark 4A complete and start the credential list/search/detail slice without changing the vault format.
