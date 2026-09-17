@@ -5,6 +5,9 @@ import Testing
 private actor FakeSetupStore: SetupStatusStoring {
     var completed = false
     func isSetupComplete() async throws -> Bool { completed }
+    func hasPendingSetup() async -> Bool { false }
+    func beginSetup() async throws {}
+    func clearPendingSetup() async {}
     func markSetupComplete(_ metadata: SetupMetadata) async throws { completed = true }
 }
 
@@ -24,12 +27,14 @@ private actor NoopSession: VaultSessionAccessing {
 }
 
 private struct NoopVaultStore: EncryptedVaultStoring {
+    func hasVault() async -> Bool { false }
     func createEmptyVault(using key: Data) async throws {}
     func recordCount(using key: Data) async throws -> Int { 0 }
     func removeIncompleteVault() async {}
 }
 
 private actor NoopRecoveryStore: RecoveryEnvelopeStoring {
+    func hasRecoveryEnvelope() async -> Bool { false }
     func save(_ envelope: Data) async throws {}
     func load() async throws -> Data { Data() }
     func removeIncompleteRecovery() async {}
